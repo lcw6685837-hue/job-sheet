@@ -55,7 +55,7 @@
                 <div class="flex-1 flex justify-end gap-2 no-print shrink-0">
                     <button onclick="toggleFullScreen()" class="bg-slate-800 hover:bg-slate-700 text-white px-3 py-1.5 rounded border border-slate-600 font-bold transition flex items-center gap-2 text-xs shadow-md"><i class="fas fa-expand"></i> 전체화면</button>
                     <button onclick="window.print()" class="bg-slate-800 hover:bg-slate-700 text-white px-3 py-1.5 rounded border border-slate-600 font-bold transition flex items-center gap-2 text-xs shadow-md"><i class="fas fa-print"></i> 인쇄</button>
-                    <button onclick="window.close()" class="bg-rose-900 hover:bg-rose-800 text-white px-3 py-1.5 rounded border border-rose-700 font-bold transition flex items-center gap-2 text-xs shadow-md"><i class="fas fa-times"></i> 닫기</button>
+                    <button onclick="logout()" class="bg-rose-900 hover:bg-rose-800 text-white px-3 py-1.5 rounded border border-rose-700 font-bold transition flex items-center gap-2 text-xs shadow-md"><i class="fas fa-right-from-bracket"></i> 로그아웃</button>
                 </div>
             </div>
 
@@ -179,6 +179,7 @@
     </div>
 
     <!-- Firebase 및 데이터 연동 스크립트 -->
+    <script src="firebase-config.js"></script>
     <script src="script.js"></script>
 </body>
 </html>

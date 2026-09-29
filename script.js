@@ -13,22 +13,14 @@ function toggleFullScreen() {
 
 // ===== Firebase 및 데이터 연동 =====
 // 로그인되지 않았을 때 이동할 로그인 페이지 경로 (이 페이지 기준 상대경로)
-const LOGIN_PAGE_URL = "index.html";
+const LOGIN_PAGE_URL = "login.html";
 
-const firebaseConfig = {
-    apiKey: "AIzaSyA_JNWO5Ke5ZVJDnwP06QW9WsZXNZFv0bc",
-    authDomain: "sundochem-dashboard.firebaseapp.com",
-    databaseURL: "https://sundochem-dashboard-default-rtdb.firebaseio.com",
-    projectId: "sundochem-dashboard",
-    storageBucket: "sundochem-dashboard.firebasestorage.app",
-    messagingSenderId: "360796635566",
-    appId: "1:360796635566:web:d3bf85eb5e5e1574b5483f"
-};
-
-if (!firebase.apps.length) {
-    firebase.initializeApp(firebaseConfig);
-}
 const db = firebase.database();
+
+// ===== 로그아웃 =====
+function logout() {
+    firebase.auth().signOut();
+}
 
 document.addEventListener('DOMContentLoaded', () => {
     const dateInput = document.getElementById('log-date');
@@ -37,8 +29,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const syncItems = document.querySelectorAll('.sync-item');
 
     let currentRef = null;
+    let listenersAttached = false;
 
     const daysOfWeek = ['일', '월', '화', '수', '목', '금', '토'];
+
+    // Date 객체를 YYYY-MM-DD 문자열로 변환
+    function formatDate(date) {
+        const yyyy = date.getFullYear();
+        const mm = String(date.getMonth() + 1).padStart(2, '0');
+        const dd = String(date.getDate()).padStart(2, '0');
+        return `${yyyy}-${mm}-${dd}`;
+    }
 
     // null 및 undefined 안전 제거 함수
     function sanitizeValue(val) {
@@ -63,11 +64,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const currentDate = new Date(dateInput.value);
         if (!isNaN(currentDate)) {
             currentDate.setDate(currentDate.getDate() + offsetDays);
-            const yyyy = currentDate.getFullYear();
-            const mm = String(currentDate.getMonth() + 1).padStart(2, '0');
-            const dd = String(currentDate.getDate()).padStart(2, '0');
-            const newDateStr = `${yyyy}-${mm}-${dd}`;
-            
+            const newDateStr = formatDate(currentDate);
+
             dateInput.value = newDateStr;
             loadLogData(newDateStr);
             updateDayDisplay(newDateStr);
@@ -76,19 +74,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 오늘 날짜 바로가기
     window.goToday = function() {
-        const today = new Date();
-        const yyyy = today.getFullYear();
-        const mm = String(today.getMonth() + 1).padStart(2, '0');
-        const dd = String(today.getDate()).padStart(2, '0');
-        const todayStr = `${yyyy}-${mm}-${dd}`;
-        
+        const todayStr = formatDate(new Date());
+
         dateInput.value = todayStr;
         loadLogData(todayStr);
         updateDayDisplay(todayStr);
     };
 
-    // 초기 오늘 날짜 세팅
-    goToday();
+    // 초기 오늘 날짜 표시 세팅 (데이터 로드는 인증 확인 후 진행)
+    dateInput.value = formatDate(new Date());
+    updateDayDisplay(dateInput.value);
 
     // Firebase 실시간 데이터 로드
     function loadLogData(dateStr) {
@@ -103,27 +98,33 @@ document.addEventListener('DOMContentLoaded', () => {
                     item.value = sanitizeValue(data[item.id]);
                 }
             });
+        }, err => {
+            console.error("데이터 로드 오류:", err);
         });
     }
 
     // 인증 상태 감지 및 이벤트 리스너 등록
     firebase.auth().onAuthStateChanged((user) => {
         if (user) {
-            syncItems.forEach(item => {
-                item.addEventListener('input', e => {
-                    if (currentRef) {
-                        currentRef.child(e.target.id).set(e.target.value)
-                            .catch(err => {
-                                console.error("저장 오류:", err);
-                            });
-                    }
+            if (!listenersAttached) {
+                syncItems.forEach(item => {
+                    item.addEventListener('input', e => {
+                        if (currentRef) {
+                            currentRef.child(e.target.id).set(e.target.value)
+                                .catch(err => {
+                                    console.error("저장 오류:", err);
+                                });
+                        }
+                    });
                 });
-            });
 
-            dateInput.addEventListener('change', e => {
-                loadLogData(e.target.value);
-                updateDayDisplay(e.target.value);
-            });
+                dateInput.addEventListener('change', e => {
+                    loadLogData(e.target.value);
+                    updateDayDisplay(e.target.value);
+                });
+
+                listenersAttached = true;
+            }
 
             loadLogData(dateInput.value);
             updateDayDisplay(dateInput.value);
